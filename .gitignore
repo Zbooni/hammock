@@ -1,0 +1,7 @@
+# Python package metadata
+*.egg-info/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
