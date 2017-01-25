@@ -54,10 +54,9 @@ class AuthenticatedUserAccessFilter(filters.BaseFilterBackend):
         # unfiltered querysets
         filter_staff_accounts = getattr(view, 'filter_staff_accounts', True)
 
-        if not filter_staff_accounts:
-            if getattr(request.user, 'is_staff', False):
-                # authenticated user is admin, return full queryset
-                return queryset
+        if not filter_staff_accounts and request.user.is_staff:
+            # authenticated user is admin, return full queryset
+            return queryset
 
         # authenticated user is regular user, filter queryset by its ID
         filter_kwargs = {
