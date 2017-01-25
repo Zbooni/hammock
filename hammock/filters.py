@@ -9,6 +9,17 @@ from rest_framework import filters
 class AuthenticatedUserAccessFilter(filters.BaseFilterBackend):
     """Filter that returns objects accessible to the authenticated user."""
 
+    def _is_app_token_authenticated(self, request):
+        """Return `True` if request is app token authenticated."""
+        if not request.auth:
+            return False
+
+        token_app = request.auth.application
+        if token_app.authorization_grant_type != 'client-credentials':
+            return False
+
+        return request.user is None
+
     def filter_queryset(self, request, queryset, view):
         """Return queryset filtered by the authenticated user."""
         view_user_pk_attributes = (
