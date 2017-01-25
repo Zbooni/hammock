@@ -47,6 +47,9 @@ class AuthenticatedUserAccessFilter(filters.BaseFilterBackend):
 
         if self._is_app_token_authenticated(request):
             # app token authenticated, assume admin, return full queryset
+            # FIXME: This behavior should be in its own filter as it's
+            # no longer about the user (which don't exist) and this
+            # behavior is very specific to Zbooni.
             return queryset
 
         # Whether or not staff user accounts gets filtered querysets as
