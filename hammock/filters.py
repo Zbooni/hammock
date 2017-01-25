@@ -9,6 +9,17 @@ from rest_framework import filters
 class AuthenticatedUserAccessFilter(filters.BaseFilterBackend):
     """Filter that returns objects accessible to the authenticated user."""
 
+    def _is_app_token_authenticated(self, request):
+        """Return `True` if request is app token authenticated."""
+        if not request.auth:
+            return False
+
+        token_app = request.auth.application
+        if token_app.authorization_grant_type != 'client-credentials':
+            return False
+
+        return request.user is None
+
     def filter_queryset(self, request, queryset, view):
         """Return queryset filtered by the authenticated user."""
         view_user_pk_attributes = (
@@ -33,6 +44,13 @@ class AuthenticatedUserAccessFilter(filters.BaseFilterBackend):
             getattr(view, 'user_id_filter_kwarg', None))
 
         user_pk_field = getattr(view, 'user_pk_field', 'id')
+
+        if self._is_app_token_authenticated(request):
+            # app token authenticated, assume admin, return full queryset
+            # FIXME: This behavior should be in its own filter as it's
+            # no longer about the user (which don't exist) and this
+            # behavior is very specific to Zbooni.
+            return queryset
 
         # Whether or not staff user accounts gets filtered querysets as
         # well. Set to `False` in the view to give staff accounts
