@@ -45,6 +45,10 @@ class AuthenticatedUserAccessFilter(filters.BaseFilterBackend):
 
         user_pk_field = getattr(view, 'user_pk_field', 'id')
 
+        if self._is_app_token_authenticated(request):
+            # app token authenticated, assume admin, return full queryset
+            return queryset
+
         # Whether or not staff user accounts gets filtered querysets as
         # well. Set to `False` in the view to give staff accounts
         # unfiltered querysets
