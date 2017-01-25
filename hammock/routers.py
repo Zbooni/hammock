@@ -9,7 +9,7 @@ class NonDefaultPermissionApiRootRouter(routers.DefaultRouter):
 
     def __init__(self, trailing_slash=True, root_view_permission_classes=None):
         """Initialize router."""
-        super(self, NonDefaultPermissionApiRootRouter).__init__(
+        super(NonDefaultPermissionApiRootRouter, self).__init__(
             trailing_slash=trailing_slash)
 
         self.root_view_permission_classes = (
