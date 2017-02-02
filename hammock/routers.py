@@ -1,5 +1,8 @@
 """Custom routers."""
 
+import rest_framework
+import semver
+
 from rest_framework import routers
 from rest_framework.settings import api_settings
 
@@ -18,10 +21,13 @@ class NonDefaultPermissionApiRootRouter(routers.DefaultRouter):
 
     def get_api_root_view(self, api_urls=None):
         """Return the view for the API root."""
+        args = []
+        if semver.parse_version_info(rest_framework.VERSION) >= (3, 4, 0):
+            args = [api_urls]
         api_root_view = super(
             NonDefaultPermissionApiRootRouter, self
-        ).get_api_root_view(
-            api_urls=api_urls)
+        ).get_api_root_view(*args)
+
         BaseApiRoot = api_root_view.cls
 
         class ApiRoot(BaseApiRoot):
