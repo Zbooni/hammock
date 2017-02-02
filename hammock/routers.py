@@ -18,7 +18,10 @@ class NonDefaultPermissionApiRootRouter(routers.DefaultRouter):
 
     def get_api_root_view(self, api_urls=None):
         """Return the view for the API root."""
-        api_root_view = super().get_api_root_view(api_urls=api_urls)
+        api_root_view = super(
+            NonDefaultPermissionApiRootRouter, self
+        ).get_api_root_view(
+            api_urls=api_urls)
         BaseApiRoot = api_root_view.cls
 
         class ApiRoot(BaseApiRoot):
