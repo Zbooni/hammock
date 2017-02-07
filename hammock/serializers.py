@@ -123,15 +123,14 @@ class PolymorphicModelSerializer(serializers.ModelSerializer):
     def _get_differentiator_value(cls, instance=None, data=fields.empty):
         """Return the value of the differentiator from `data` or `instance`."""
         differentiator_value = None
+        differentiator_field = getattr(cls.Meta, 'differentiator_field')
 
         if data is not fields.empty:
-            differentiator_value = data.get(
-                getattr(cls.Meta, 'differentiator_field'))
+            differentiator_value = data.get(differentiator_field)
 
         if not differentiator_value and instance:
             try:
-                differentiator_value = getattr(
-                    instance, getattr(cls.Meta, 'differentiator_field'))
+                differentiator_value = getattr(instance, differentiator_field)
             except AttributeError:
                 pass
 
