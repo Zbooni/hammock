@@ -131,7 +131,7 @@ class PolymorphicModelSerializer(serializers.ModelSerializer):
         if not differentiator_value and instance:
             try:
                 differentiator_value = getattr(
-                    instance, getattr(cls.Meta, 'differentiator_value'))
+                    instance, getattr(cls.Meta, 'differentiator_field'))
             except AttributeError:
                 pass
 
