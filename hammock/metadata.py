@@ -193,3 +193,125 @@ class ObjectSpecificMetadata(SimplerMetadata):
                 view.request = request
 
         return actions
+
+
+class PolymorphicSerializerMetadata(ObjectSpecificMetadata):
+    """Metadata class for polymorphic serializers."""
+
+    differentiator_values = None
+    child_serializer_map = None
+
+    def get_serializer_info(self, serializer):
+        """Return metadata dictionary for serializer's fields."""
+        if hasattr(serializer, 'child'):
+            # If this is a `ListSerializer` then we want to examine the
+            # underlying child serializer instance instead.
+            serializer = serializer.child
+
+        meta = getattr(serializer, 'Meta', None)
+        if hasattr(meta, 'child_serializer_map'):
+            # Polymorphic serializer
+
+            # For polymorphic serializers, we will build metadata for
+            # all possible morphisms of the serializer
+
+            self.differentiator_field = getattr(
+                meta, 'differentiator_field')
+            self.child_serializer_map = getattr(
+                meta, 'child_serializer_map')
+            serializer_field_items = self.child_serializer_map.items()
+
+            # Build dict of serializer variants and the list of its fields
+            serializer_fields = {}
+            for key, child_serializer in serializer_field_items:
+                serializer_inst = child_serializer()
+                serializer_inst_fields = serializer_inst.fields
+                serializer_fields.update(
+                    {
+                        key: serializer_inst_fields
+                    })
+
+            # Build dict of field names with list of serializer variants
+            # it appears in
+            #
+            # Fields should be list of two-tuple of
+            # (serializer variant key, field instance)
+            fields = defaultdict(list)
+            for key, serializer_fields_dict in serializer_fields.items():
+                for name, field in serializer_fields_dict.items():
+                    fields[name].append((key, field))
+            fields = fields.items()
+
+            return OrderedDict([
+                (field_name, self.get_fields_info(_fields, field_name))
+                for field_name, _fields in fields
+            ])
+
+        # non polymorphic
+        return OrderedDict([
+            (field_name, self.get_field_info(field))
+            for field_name, field in serializer.fields.items()
+        ])
+
+    def get_fields_info(self, fields, field_name=None):
+        """Return metadata dictionary of a polymorphic serializer field."""
+        if len(fields) == 1:
+            field_info = self.get_field_info(fields[0][1])
+            field_info['only_if'] = [
+                {
+                    self.differentiator_field: [fields[0][0]],
+                }
+            ]
+            return field_info
+
+        keys = []
+        for key, field in fields:
+            keys.append(key)
+
+        only_if = None
+        if set(self.child_serializer_map.keys()) != set(keys):
+            only_if = [
+                {
+                    self.differentiator_field: keys,
+                }
+            ]
+
+        field_info = self.get_field_info(field)
+        if only_if:
+            field_info['only_if'] = only_if
+
+        if (not field_info.get('read_only')
+                and isinstance(field, serializers.ChoiceField)):
+            # Field is a writable ChoiceField
+            # Describe the choices
+
+            choices = OrderedDefaultDict(list)
+            for key, field in fields:
+                for choice_value, choice_name in field.choices.items():
+                    choices[choice_value].append((key, choice_name))
+
+            _choices = []
+            for choice_value, _choice_info in choices.items():
+                # Set choice `value` and `display_name` attributes
+                choice_name = force_text(_choice_info[0][1], strings_only=True)
+                choice = OrderedDict([
+                    ('value', choice_value),
+                    ('display_name', choice_name),
+                ])
+
+                # Set choice availability conditions
+                keys = [c[0] for c in _choice_info]
+                if set(self.child_serializer_map.keys()) != set(keys):
+                    # choice available only for some, not all
+                    choice['available'] = {
+                        'only_if': [
+                            {
+                                self.differentiator_field: keys,
+                            }
+                        ]
+                    }
+
+                _choices.append(choice)
+            field_info['choices'] = _choices
+
+        return field_info
