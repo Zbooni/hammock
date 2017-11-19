@@ -1,5 +1,6 @@
 """Metadata classes."""
 
+from collections import defaultdict
 from collections import OrderedDict
 
 from django.core.exceptions import PermissionDenied
@@ -10,6 +11,16 @@ from rest_framework import exceptions
 from rest_framework import metadata
 from rest_framework import serializers
 from rest_framework.request import clone_request
+
+
+# python 2 only
+class OrderedDefaultDict(OrderedDict, defaultdict):
+    """A defaultdict that keeps the ordering of its inserted keys."""
+
+    def __init__(self, default_factory=None, *args, **kwargs):
+        """Initialize the defaultdict and the OrderedDict."""
+        super(OrderedDefaultDict, self).__init__(*args, **kwargs)
+        self.default_factory = default_factory
 
 
 class SimplerMetadata(metadata.SimpleMetadata):
