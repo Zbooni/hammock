@@ -2,10 +2,14 @@
 
 from collections import OrderedDict
 
+from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.utils.encoding import force_text
 
+from rest_framework import exceptions
 from rest_framework import metadata
 from rest_framework import serializers
+from rest_framework.request import clone_request
 
 
 class SimplerMetadata(metadata.SimpleMetadata):
@@ -130,3 +134,51 @@ class StateTransitioningFieldMetadataMixin(object):
             choices.append(choice)
 
         return choices
+
+
+class ObjectSpecificMetadata(SimplerMetadata):
+    """Metadata class that generates metadata specific to a single object."""
+
+    def determine_actions(self, request, view):
+        """
+        Return `dict` of actions for the viewset.
+
+        For generic class based views we return information about
+        the fields that are accepted for 'PUT' and 'POST' methods.
+
+        If the request is for a specific object, generate metadata
+        specific to that object by instantiating the serializer with
+        the object and passing it to the `get_serializer_info` method.
+
+        """
+        actions = {}
+        for method in {'PUT', 'POST'} & set(view.allowed_methods):
+            view.request = clone_request(request, method)
+            try:
+                # Test global permissions
+                if hasattr(view, 'check_permissions'):
+                    view.check_permissions(view.request)
+                # Test object permissions
+                if method == 'PUT' and hasattr(view, 'get_object'):
+                    view.get_object()
+            except (exceptions.APIException, PermissionDenied, Http404):
+                pass
+            else:
+                # If user has appropriate permissions for the view, include
+                # appropriate metadata about the fields that should be
+                # supplied.
+
+                # If the URI we are getting the `OPTIONS` for is a URI for a
+                # single object, pass the object as `instance` to the
+                # serializer so the built metadata will be specific to that
+                # object.
+                if method == 'PUT' and hasattr(view, 'get_object'):
+                    serializer = view.get_serializer(view.get_object())
+                else:
+                    serializer = view.get_serializer()
+
+                actions[method] = self.get_serializer_info(serializer)
+            finally:
+                view.request = request
+
+        return actions
