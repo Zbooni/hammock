@@ -1,5 +1,6 @@
 """Metadata classes."""
 
+from collections import Callable
 from collections import defaultdict
 from collections import OrderedDict
 
@@ -13,14 +14,47 @@ from rest_framework import serializers
 from rest_framework.request import clone_request
 
 
-# python 2 only
-class OrderedDefaultDict(OrderedDict, defaultdict):
-    """A defaultdict that keeps the ordering of its inserted keys."""
+class OrderedDefaultDict(OrderedDict):
+    """
+    A `defaultdict` with `OrderedDict` as its base class.
+
+    From https://stackoverflow.com/a/4127426/3905970 by user `martineau`
+    (https://stackoverflow.com/users/355230/martineau).
+
+    """
 
     def __init__(self, default_factory=None, *args, **kwargs):
-        """Initialize the defaultdict and the OrderedDict."""
+        """Initialize the instance."""
+        if not (default_factory is None
+                or isinstance(default_factory, Callable)):
+            raise TypeError('first argument must be callable or None')
         super(OrderedDefaultDict, self).__init__(*args, **kwargs)
-        self.default_factory = default_factory
+        self.default_factory = default_factory  # called by __missing__()
+
+    def __missing__(self, key):
+        """
+        Return the value for the missing key.
+
+        Calls `default_factory`, if it is set, to generate the value.
+        Raises `KeyError` if `default_factory` was not set either.  This
+        method is called by `__getitem__` if the value was not found.
+
+        """
+        if self.default_factory is None:
+            raise KeyError(key,)
+        self[key] = value = self.default_factory()
+        return value
+
+    def __reduce__(self):
+        """Return the instance's representation for pickle support."""
+        args = (self.default_factory,) if self.default_factory else tuple()
+        return self.__class__, args, None, None, self.iteritems()
+
+    def __repr__(self):
+        """Return the string representation of the instance."""
+        return '%s(%r, %r)' % (
+            self.__class__.__name__, self.default_factory,
+            list(self.iteritems()))
 
 
 class SimplerMetadata(metadata.SimpleMetadata):
