@@ -1,5 +1,8 @@
 """Custom APIView base classes."""
 
+from django.db import transaction
+from django.utils.decorators import method_decorator
+
 from rest_framework import views
 
 
@@ -59,3 +62,56 @@ class NonModelAPIView(views.APIView):
         """Return a paginated `Response` object for the given output data."""
         assert self.paginator is not None
         return self.paginator.get_paginated_response(data)
+
+
+class AtomicNonIdempotentActionViewSetMixin(object):
+    """
+    Wraps non-idempotent viewset action methods in a database transaction.
+
+    Decorates `create`, `update`, and `destroy` methods with the
+    `transaction.atomic` decorator.  Since this mixin class decorates
+    methods, this needs to appear first in the class' derived classes
+    list.  SQL operations from derived classes that appears before this
+    mixin in the list will operate outside of the database transaction
+    and will not be rolled back in case of exceptions.
+
+    """
+
+    @method_decorator(transaction.atomic)
+    def create(self, request, *args, **kwargs):
+        """
+        Create resource.
+
+        This method wraps the superclass' `create` method in a
+        `transaction.atomic` context so errors that occur within the
+        method will cause all pending operations to rollback.
+
+        """
+        return super(AtomicNonIdempotentActionViewSetMixin, self).create(
+            request, *args, **kwargs)
+
+    @method_decorator(transaction.atomic)
+    def update(self, request, *args, **kwargs):
+        """
+        Update the resource.
+
+        This method wraps the superclass' `update` method in a
+        `transaction.atomic` context so errors that occur within the
+        method will cause all pending operations to rollback.
+
+        """
+        return super(AtomicNonIdempotentActionViewSetMixin, self).update(
+            request, *args, **kwargs)
+
+    @method_decorator(transaction.atomic)
+    def destroy(self, request, *args, **kwargs):
+        """
+        Destroy (delete) the resource.
+
+        This method wraps the superclass' `destroy` method in a
+        `transaction.atomic` context so errors that occur within the
+        method will cause all pending operations to rollback.
+
+        """
+        return super(AtomicNonIdempotentActionViewSetMixin, self).destroy(
+            request, *args, **kwargs)
