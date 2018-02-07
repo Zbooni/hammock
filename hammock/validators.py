@@ -6,7 +6,42 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class ValueTransitionValidator(object):
-    """Validator for value transitions."""
+    """
+    Validator for value transitions.
+
+    For fields with values that can only transition from a given value.
+    For example, a serializer of
+
+    ```
+    class StateSerializer(serializers.Serializer):
+        state = serializers.ChoiceField(
+            choices=['start', 'middle', 'end'],
+            validators=[
+                ValueTransitionValidator(
+                    value_transitions=[
+                        # (to_value, [from_values...])
+                        ('start', [None]),
+                        ('middle', ['start']),
+                        ('end', ['start', 'middle']),
+                        (None, ['end'])
+                    ]
+                )
+            ])
+    ```
+
+    - will allow the value "start" for `state` only when creating the
+      object (initial value)
+    - will allow "start" value to be changed to (transition to) "middle"
+      value
+    - will allow "start" and "middle" values to transition to the "end"
+      value
+    - will prevent the value "end" to transition to any other value (a
+      final state)
+
+    A `ValidationError` exception will be raised when trying to make an
+    invalid transition, for example, "middle" value to "start" value.
+
+    """
 
     message = _(
         'Cannot transition from "{0}" to "{1}". '
