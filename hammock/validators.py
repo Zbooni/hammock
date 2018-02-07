@@ -37,6 +37,8 @@ class ValueTransitionValidator(object):
       value
     - will prevent the value "end" to transition to any other value (a
       final state)
+    - any value that is not listed in `value_transitions` will allow
+      transition from any value
 
     A `ValidationError` exception will be raised when trying to make an
     invalid transition, for example, "middle" value to "start" value.
