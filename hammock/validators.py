@@ -3,7 +3,9 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
 
+from rest_framework.compat import unicode_to_repr
 from rest_framework.exceptions import ValidationError
+from rest_framework.utils.representation import smart_repr
 
 
 class ValueTransitionValidator(object):
@@ -111,3 +113,11 @@ class ValueTransitionValidator(object):
                             '"{}"'.format(s)
                             for s in valid_value_transitions
                         ])))
+
+    def __repr__(self):
+        """Return python representation of instance."""
+        return unicode_to_repr(
+            '<{}(value_transitions={}, valid_values={})>'.format(
+                self.__class__.__name__,
+                smart_repr(self.value_transitions),
+                smart_repr(self.valid_values)))
