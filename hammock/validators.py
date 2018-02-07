@@ -1,8 +1,9 @@
 """Validator classes for serializers and serializer fields."""
 
 from django.core.exceptions import ImproperlyConfigured
-from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
+
+from rest_framework.exceptions import ValidationError
 
 
 class ValueTransitionValidator(object):
