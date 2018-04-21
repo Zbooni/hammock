@@ -37,4 +37,4 @@ class NonDefaultPermissionApiRootRouter(routers.DefaultRouter):
             # the permission for the root view; set to allow anyone access
             permission_classes = self.root_view_permission_classes
 
-        return ApiRoot.as_view()
+        return ApiRoot.as_view(**api_root_view.initkwargs)
