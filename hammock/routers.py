@@ -10,10 +10,13 @@ from rest_framework.settings import api_settings
 class NonDefaultPermissionApiRootRouter(routers.DefaultRouter):
     """Router with a permission different from the default for the root."""
 
-    def __init__(self, trailing_slash=True, root_view_permission_classes=None):
+    def __init__(self, *args, **kwargs):
         """Initialize router."""
-        super(NonDefaultPermissionApiRootRouter, self).__init__(
-            trailing_slash=trailing_slash)
+        root_view_permission_classes = kwargs.pop(
+            'root_view_permission_classes', None)
+
+        super(
+            NonDefaultPermissionApiRootRouter, self).__init__(*args, **kwargs)
 
         self.root_view_permission_classes = (
             root_view_permission_classes or
@@ -34,4 +37,5 @@ class NonDefaultPermissionApiRootRouter(routers.DefaultRouter):
             # the permission for the root view; set to allow anyone access
             permission_classes = self.root_view_permission_classes
 
-        return ApiRoot.as_view()
+        as_view_kwargs = getattr(api_root_view, 'initkwargs', {})
+        return ApiRoot.as_view(**as_view_kwargs)
