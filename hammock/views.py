@@ -1,5 +1,6 @@
 """Custom APIView base classes."""
 
+from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.utils.decorators import method_decorator
 
@@ -115,3 +116,90 @@ class AtomicNonIdempotentActionViewSetMixin(object):
         """
         return super(AtomicNonIdempotentActionViewSetMixin, self).destroy(
             request, *args, **kwargs)
+
+
+class NestedModelViewSetMixin(object):
+    """Mixin for `ModelViewSet` that is nested under another `ModelViewSet.`"""
+
+    # The model class of the nesting `ModelViewSet`
+    # e.g. `User` if the User model is the nesting model
+    parent_model = None
+
+    # The field name of the nested model that references the parent model
+    # e.g. `user` if the nested or related model's field to the `User`
+    # model is `user`
+    parent_field_name = None
+
+    # The queryset filter keyword argument for matching the parent
+    # model's primary key value
+    # e.g. `user__pk`
+    parent_lookup_field = None
+
+    # The keyword argument in the URL configuration for the parent model
+    parent_lookup_url_kwarg = None
+
+    def get_parent_model(self):
+        """Return the parent model class."""
+        if self.parent_model is None:
+            raise ImproperlyConfigured(
+                '`parent_model` is not set.  You either need to set '
+                '`parent_model` or implement `get_parent_model` method.')
+
+        return self.parent_model
+
+    def get_parent_field_name(self):
+        """Return the field name referencing the related parent model."""
+        if not self.parent_field_name:
+            return self.get_parent_model()._meta.model_name
+
+        return self.parent_field_name
+
+    def get_parent_lookup_field(self):
+        """Return the queryset filter keyword argument for parent model pk."""
+        if not self.parent_lookup_field:
+            return '{}__pk'.format(self.get_parent_model()._meta.model_name)
+
+        return self.parent_lookup_field
+
+    def get_parent_lookup_url_kwarg(self):
+        """Return the keyword argument in the URL conf for the parent model."""
+        if not self.parent_lookup_url_kwarg:
+            return '{}_pk'.format(self.get_parent_model()._meta.model_name)
+
+        return self.parent_lookup_url_kwarg
+
+    def get_parent_model_instance(self):
+        """Return the instance of the parent model."""
+        return self.get_parent_model().objects.get(
+            pk=self.kwargs.get(self.get_parent_lookup_url_kwarg()))
+
+    def get_queryset(self):
+        """Return queryset to use in the viewset."""
+        queryset = super().get_queryset()
+
+        if self.get_parent_lookup_url_kwarg() in self.kwargs:
+            filter_kwargs = {
+                self.get_parent_lookup_field(): self.kwargs.get(
+                    self.get_parent_lookup_url_kwarg()),
+            }
+            queryset = queryset.filter(**filter_kwargs)
+
+        return queryset
+
+    def get_serializer(self, instance=None, *args, **kwargs):
+        """
+        Return the serializer with the instance with the nesting model object.
+
+        Adds the nesting model instance in the serializer `instance` as it is
+        needed when creating the model object, i.e. when the serializer's
+        `instance` is `None`, which happens on create.
+
+        """
+        if instance is None:
+            model_kwargs = {
+                self.get_parent_field_name(): self.get_parent_model_instance(),
+            }
+            instance = self.get_queryset().model(**model_kwargs)
+        return (
+            super(NestedModelViewSetMixin, self)
+            .get_serializer(instance=instance, *args, **kwargs))
