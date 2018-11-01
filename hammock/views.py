@@ -175,7 +175,7 @@ class NestedModelViewSetMixin(object):
 
     def get_queryset(self):
         """Return queryset to use in the viewset."""
-        queryset = super().get_queryset()
+        queryset = super(NestedModelViewSetMixin, self).get_queryset()
 
         if self.get_parent_lookup_url_kwarg() in self.kwargs:
             filter_kwargs = {
