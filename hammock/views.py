@@ -133,7 +133,7 @@ class NestedModelViewSetMixin(object):
     # The queryset filter keyword argument for matching the parent
     # model's primary key value
     # e.g. `user__pk`
-    parent_lookup_field = None
+    nesting_model_lookup_field = None
 
     # The keyword argument in the URL configuration for the parent model
     parent_lookup_url_kwarg = None
@@ -154,12 +154,12 @@ class NestedModelViewSetMixin(object):
 
         return self.nesting_model_field_name
 
-    def get_parent_lookup_field(self):
+    def get_nesting_model_lookup_field(self):
         """Return the queryset filter keyword argument for parent model pk."""
-        if not self.parent_lookup_field:
+        if not self.nesting_model_lookup_field:
             return '{}__pk'.format(self.get_nesting_model()._meta.model_name)
 
-        return self.parent_lookup_field
+        return self.nesting_model_lookup_field
 
     def get_parent_lookup_url_kwarg(self):
         """Return the keyword argument in the URL conf for the parent model."""
@@ -179,7 +179,7 @@ class NestedModelViewSetMixin(object):
 
         if self.get_parent_lookup_url_kwarg() in self.kwargs:
             filter_kwargs = {
-                self.get_parent_lookup_field(): self.kwargs.get(
+                self.get_nesting_model_lookup_field(): self.kwargs.get(
                     self.get_parent_lookup_url_kwarg()),
             }
             queryset = queryset.filter(**filter_kwargs)
