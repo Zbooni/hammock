@@ -136,7 +136,7 @@ class NestedModelViewSetMixin(object):
     nesting_model_lookup_field = None
 
     # The keyword argument in the URL configuration for the parent model
-    parent_lookup_url_kwarg = None
+    nesting_model_lookup_url_kwarg = None
 
     def get_nesting_model(self):
         """Return the parent model class."""
@@ -161,26 +161,26 @@ class NestedModelViewSetMixin(object):
 
         return self.nesting_model_lookup_field
 
-    def get_parent_lookup_url_kwarg(self):
+    def get_nesting_model_lookup_url_kwarg(self):
         """Return the keyword argument in the URL conf for the parent model."""
-        if not self.parent_lookup_url_kwarg:
+        if not self.nesting_model_lookup_url_kwarg:
             return '{}_pk'.format(self.get_nesting_model()._meta.model_name)
 
-        return self.parent_lookup_url_kwarg
+        return self.nesting_model_lookup_url_kwarg
 
     def get_nesting_model_instance(self):
         """Return the instance of the parent model."""
         return self.get_nesting_model().objects.get(
-            pk=self.kwargs.get(self.get_parent_lookup_url_kwarg()))
+            pk=self.kwargs.get(self.get_nesting_model_lookup_url_kwarg()))
 
     def get_queryset(self):
         """Return queryset to use in the viewset."""
         queryset = super(NestedModelViewSetMixin, self).get_queryset()
 
-        if self.get_parent_lookup_url_kwarg() in self.kwargs:
+        if self.get_nesting_model_lookup_url_kwarg() in self.kwargs:
             filter_kwargs = {
                 self.get_nesting_model_lookup_field(): self.kwargs.get(
-                    self.get_parent_lookup_url_kwarg()),
+                    self.get_nesting_model_lookup_url_kwarg()),
             }
             queryset = queryset.filter(**filter_kwargs)
 
