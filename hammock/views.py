@@ -123,7 +123,7 @@ class NestedModelViewSetMixin(object):
 
     # The model class of the nesting `ModelViewSet`
     # e.g. `User` if the User model is the nesting model
-    parent_model = None
+    nesting_model = None
 
     # The field name of the nested model that references the parent model
     # e.g. `user` if the nested or related model's field to the `User`
@@ -138,39 +138,39 @@ class NestedModelViewSetMixin(object):
     # The keyword argument in the URL configuration for the parent model
     parent_lookup_url_kwarg = None
 
-    def get_parent_model(self):
+    def get_nesting_model(self):
         """Return the parent model class."""
-        if self.parent_model is None:
+        if self.nesting_model is None:
             raise ImproperlyConfigured(
-                '`parent_model` is not set.  You either need to set '
-                '`parent_model` or implement `get_parent_model` method.')
+                '`nesting_model` is not set.  You either need to set '
+                '`nesting_model` or implement `get_nesting_model` method.')
 
-        return self.parent_model
+        return self.nesting_model
 
     def get_parent_field_name(self):
         """Return the field name referencing the related parent model."""
         if not self.parent_field_name:
-            return self.get_parent_model()._meta.model_name
+            return self.get_nesting_model()._meta.model_name
 
         return self.parent_field_name
 
     def get_parent_lookup_field(self):
         """Return the queryset filter keyword argument for parent model pk."""
         if not self.parent_lookup_field:
-            return '{}__pk'.format(self.get_parent_model()._meta.model_name)
+            return '{}__pk'.format(self.get_nesting_model()._meta.model_name)
 
         return self.parent_lookup_field
 
     def get_parent_lookup_url_kwarg(self):
         """Return the keyword argument in the URL conf for the parent model."""
         if not self.parent_lookup_url_kwarg:
-            return '{}_pk'.format(self.get_parent_model()._meta.model_name)
+            return '{}_pk'.format(self.get_nesting_model()._meta.model_name)
 
         return self.parent_lookup_url_kwarg
 
-    def get_parent_model_instance(self):
+    def get_nesting_model_instance(self):
         """Return the instance of the parent model."""
-        return self.get_parent_model().objects.get(
+        return self.get_nesting_model().objects.get(
             pk=self.kwargs.get(self.get_parent_lookup_url_kwarg()))
 
     def get_queryset(self):
@@ -197,7 +197,8 @@ class NestedModelViewSetMixin(object):
         """
         if instance is None:
             model_kwargs = {
-                self.get_parent_field_name(): self.get_parent_model_instance(),
+                self.get_parent_field_name(): (
+                    self.get_nesting_model_instance()),
             }
             instance = self.get_queryset().model(**model_kwargs)
         return (
