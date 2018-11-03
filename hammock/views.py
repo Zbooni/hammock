@@ -119,7 +119,7 @@ class AtomicNonIdempotentActionViewSetMixin(object):
 
 
 class NestedModelViewSetMixin(object):
-    """Mixin for `ModelViewSet` that is nested under another `ModelViewSet.`"""
+    """Mixin for `ModelViewSet` that is nested under another `ModelViewSet`."""
 
     # The model class of the nesting `ModelViewSet`
     # e.g. `User` if the User model is the nesting model
