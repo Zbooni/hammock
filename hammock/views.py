@@ -186,6 +186,30 @@ class NestedModelViewSetMixin(object):
 
         return queryset
 
+    def get_serializer_model_instance(self):
+        """Return the model instance to set in the serializer instance.
+
+        Returns the unsaved instance of this viewsets model to use on
+        `create`.  The nesting model instance is set in this unsaved
+        instance and will be merged with the serializer's data on save.
+        The nesting model instance is passed to the serializer via this
+        unsaved instance rather than via the `serializer.save()` call
+        (e.g. `serializer.save(nesting_model=model_inst)`) to make the
+        nesting model available in the serializer during validation,
+        which is not the case with the `serializer.save()` method.
+
+        Override this method to customize how the model instance is
+        created, i.e. if you don't need the nesting model in the
+        instance or if an intermediate related model instance is needed
+        instead.
+
+        """
+        model_kwargs = {
+            self.get_nesting_model_field_name(): (
+                self.get_nesting_model_instance()),
+        }
+        return self.get_queryset().model(**model_kwargs)
+
     def get_serializer(self, instance=None, *args, **kwargs):
         """
         Return the serializer with the instance with the nesting model object.
