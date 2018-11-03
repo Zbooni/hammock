@@ -220,11 +220,7 @@ class NestedModelViewSetMixin(object):
 
         """
         if instance is None:
-            model_kwargs = {
-                self.get_nesting_model_field_name(): (
-                    self.get_nesting_model_instance()),
-            }
-            instance = self.get_queryset().model(**model_kwargs)
+            instance = self.get_serializer_model_instance()
         return (
             super(NestedModelViewSetMixin, self)
             .get_serializer(instance=instance, *args, **kwargs))
