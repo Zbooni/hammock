@@ -128,7 +128,7 @@ class NestedModelViewSetMixin(object):
     # The field name of the nested model that references the parent model
     # e.g. `user` if the nested or related model's field to the `User`
     # model is `user`
-    parent_field_name = None
+    nesting_model_field_name = None
 
     # The queryset filter keyword argument for matching the parent
     # model's primary key value
@@ -147,12 +147,12 @@ class NestedModelViewSetMixin(object):
 
         return self.nesting_model
 
-    def get_parent_field_name(self):
+    def get_nesting_model_field_name(self):
         """Return the field name referencing the related parent model."""
-        if not self.parent_field_name:
+        if not self.nesting_model_field_name:
             return self.get_nesting_model()._meta.model_name
 
-        return self.parent_field_name
+        return self.nesting_model_field_name
 
     def get_parent_lookup_field(self):
         """Return the queryset filter keyword argument for parent model pk."""
@@ -197,7 +197,7 @@ class NestedModelViewSetMixin(object):
         """
         if instance is None:
             model_kwargs = {
-                self.get_parent_field_name(): (
+                self.get_nesting_model_field_name(): (
                     self.get_nesting_model_instance()),
             }
             instance = self.get_queryset().model(**model_kwargs)
