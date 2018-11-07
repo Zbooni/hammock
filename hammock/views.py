@@ -1,5 +1,6 @@
 """Custom APIView base classes."""
 
+from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.utils.decorators import method_decorator
 
@@ -115,3 +116,111 @@ class AtomicNonIdempotentActionViewSetMixin(object):
         """
         return super(AtomicNonIdempotentActionViewSetMixin, self).destroy(
             request, *args, **kwargs)
+
+
+class NestedModelViewSetMixin(object):
+    """Mixin for `ModelViewSet` that is nested under another `ModelViewSet`."""
+
+    # The model class of the nesting `ModelViewSet`
+    # e.g. `User` if the User model is the nesting model
+    nesting_model = None
+
+    # The field name of the nested model that references the parent model
+    # e.g. `user` if the nested or related model's field to the `User`
+    # model is `user`
+    nesting_model_field_name = None
+
+    # The queryset filter keyword argument for matching the parent
+    # model's primary key value
+    # e.g. `user__pk`
+    nesting_model_lookup_field = None
+
+    # The keyword argument in the URL configuration for the parent model
+    nesting_model_lookup_url_kwarg = None
+
+    def get_nesting_model(self):
+        """Return the parent model class."""
+        if self.nesting_model is None:
+            raise ImproperlyConfigured(
+                '`nesting_model` is not set.  You either need to set '
+                '`nesting_model` or implement `get_nesting_model` method.')
+
+        return self.nesting_model
+
+    def get_nesting_model_field_name(self):
+        """Return the field name referencing the related parent model."""
+        if not self.nesting_model_field_name:
+            return self.get_nesting_model()._meta.model_name
+
+        return self.nesting_model_field_name
+
+    def get_nesting_model_lookup_field(self):
+        """Return the queryset filter keyword argument for parent model pk."""
+        if not self.nesting_model_lookup_field:
+            return '{}__pk'.format(self.get_nesting_model()._meta.model_name)
+
+        return self.nesting_model_lookup_field
+
+    def get_nesting_model_lookup_url_kwarg(self):
+        """Return the keyword argument in the URL conf for the parent model."""
+        if not self.nesting_model_lookup_url_kwarg:
+            return '{}_pk'.format(self.get_nesting_model()._meta.model_name)
+
+        return self.nesting_model_lookup_url_kwarg
+
+    def get_nesting_model_instance(self):
+        """Return the instance of the parent model."""
+        return self.get_nesting_model().objects.get(
+            pk=self.kwargs.get(self.get_nesting_model_lookup_url_kwarg()))
+
+    def get_queryset(self):
+        """Return queryset to use in the viewset."""
+        queryset = super(NestedModelViewSetMixin, self).get_queryset()
+
+        if self.get_nesting_model_lookup_url_kwarg() in self.kwargs:
+            filter_kwargs = {
+                self.get_nesting_model_lookup_field(): self.kwargs.get(
+                    self.get_nesting_model_lookup_url_kwarg()),
+            }
+            queryset = queryset.filter(**filter_kwargs)
+
+        return queryset
+
+    def get_serializer_model_instance(self):
+        """Return the model instance to set in the serializer instance.
+
+        Returns the unsaved instance of this viewsets model to use on
+        `create`.  The nesting model instance is set in this unsaved
+        instance and will be merged with the serializer's data on save.
+        The nesting model instance is passed to the serializer via this
+        unsaved instance rather than via the `serializer.save()` call
+        (e.g. `serializer.save(nesting_model=model_inst)`) to make the
+        nesting model available in the serializer during validation,
+        which is not the case with the `serializer.save()` method.
+
+        Override this method to customize how the model instance is
+        created, i.e. if you don't need the nesting model in the
+        instance or if an intermediate related model instance is needed
+        instead.
+
+        """
+        model_kwargs = {
+            self.get_nesting_model_field_name(): (
+                self.get_nesting_model_instance()),
+        }
+        return self.get_queryset().model(**model_kwargs)
+
+    def get_serializer(self, instance=None, *args, **kwargs):
+        """
+        Return the serializer with the instance with the nesting model object.
+
+        Adds the nesting model instance in the serializer `instance` as it is
+        needed when creating the model object, i.e. when the serializer's
+        `instance` is `None`, which happens on create.
+
+        """
+        if instance is None:
+            instance = self.get_serializer_model_instance()
+        return (
+            super(NestedModelViewSetMixin, self)
+            .get_serializer(instance=instance, *args, **kwargs))
