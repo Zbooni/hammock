@@ -2,7 +2,6 @@
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
-from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
 from rest_framework import views
@@ -171,8 +170,7 @@ class NestedModelViewSetMixin(object):
 
     def get_nesting_model_instance(self):
         """Return the instance of the parent model."""
-        return get_object_or_404(
-            self.get_nesting_model(),
+        return self.get_nesting_model().objects.get(
             pk=self.kwargs.get(self.get_nesting_model_lookup_url_kwarg()))
 
     def get_queryset(self):
