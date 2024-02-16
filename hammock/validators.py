@@ -47,6 +47,7 @@ class ValueTransitionValidator(object):
 
     """
 
+    requires_context = True
     message = _(
         'Cannot transition from "{0}" to "{1}". '
         'Valid transitions for "{0}" are: [{2}].')
@@ -97,8 +98,9 @@ class ValueTransitionValidator(object):
         # return list of values `current_value` can transition to
         return [t[0] for t in self.value_transitions if current_value in t[1]]
 
-    def __call__(self, value):
+    def __call__(self, value, serializer_field):
         """Run the validation."""
+        self.set_context(serializer_field)
         current_value = getattr(self.instance, self.field_name, None)
 
         valid_value_transitions = self._get_valid_value_transitions(
