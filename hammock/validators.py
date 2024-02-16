@@ -99,9 +99,7 @@ class ValueTransitionValidator(object):
 
     def __call__(self, value):
         """Run the validation."""
-        current_value = None
-        if self.instance:
-            current_value = getattr(self.instance, self.field_name, None)
+        current_value = getattr(self.instance, self.field_name, None)
 
         valid_value_transitions = self._get_valid_value_transitions(
             current_value)
