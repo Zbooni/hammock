@@ -93,7 +93,7 @@ class SimplerMetadata(metadata.SimpleMetadata):
         for attr in attrs:
             value = getattr(field, attr, None)
             if value is not None and value != '':
-                field_info[attr] = force_text(value, strings_only=True)
+                field_info[attr] = force_str(value, strings_only=True)
 
         if getattr(field, 'child', None):
             field_info['child'] = self.get_field_info(field.child)
@@ -105,7 +105,7 @@ class SimplerMetadata(metadata.SimpleMetadata):
             field_info['choices'] = [
                 {
                     'value': choice_value,
-                    'display_name': force_text(choice_name, strings_only=True)
+                    'display_name': force_str(choice_name, strings_only=True)
                 }
                 for choice_value, choice_name in field.choices.items()
             ]
@@ -163,7 +163,7 @@ class StateTransitioningFieldMetadataMixin(object):
         for choice_value, choice_name in field.choices.items():
             choice = OrderedDict([
                 ('value', choice_value),
-                ('display_name', force_text(choice_name, strings_only=True)),
+                ('display_name', force_str(choice_name, strings_only=True)),
             ])
 
             # Set choice validity conditions for `state` field
@@ -327,7 +327,7 @@ class PolymorphicSerializerMetadata(ObjectSpecificMetadata):
             _choices = []
             for choice_value, _choice_info in choices.items():
                 # Set choice `value` and `display_name` attributes
-                choice_name = force_text(_choice_info[0][1], strings_only=True)
+                choice_name = force_str(_choice_info[0][1], strings_only=True)
                 choice = OrderedDict([
                     ('value', choice_value),
                     ('display_name', choice_name),
