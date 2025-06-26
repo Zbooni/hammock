@@ -14,6 +14,9 @@ class AuthenticatedUserAccessFilter(filters.BaseFilterBackend):
         if not request.auth:
             return False
 
+        if not request.auth:
+            return False
+
         token_app = request.auth.application
         if token_app.authorization_grant_type != 'client-credentials':
             return False
