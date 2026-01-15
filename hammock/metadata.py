@@ -1,6 +1,6 @@
 """Metadata classes."""
 
-from collections import Callable
+from collections.abc import Callable
 from collections import defaultdict
 from collections import OrderedDict
 
